@@ -1,0 +1,7 @@
+procedure BJ(Variables, Constraints)
+	BJ-1(Variables,{},Constraints,0)
+end BJ
+
+procedure BJ-1(Unlabelled, Labelled,Constraints,PreviousLevel)
+	if Unlabelled={} then return Labelled
+	
