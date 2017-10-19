@@ -41,7 +41,7 @@ def safe_queens(queen1, queen2):
             queen1.row + queen1.column != queen2.row + queen2.column and
             queen1.row + queen2.column != queen2.row + queen1.column)
 
-n=8
+n=15
 
 board = solve(size = n)
 

@@ -79,7 +79,7 @@ def safe_board(queens):
     #queens[len(queens)-1] is the last queens,compare with other queens
     return [safe_queens(queens[len(queens)-1],queens[i]) for i in range(len(queens)-1)].count(False)==0
 
-n=12
+n=15
 time_start=time.time()
 board=solve(size=n)
 time_end=time.time()

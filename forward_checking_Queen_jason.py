@@ -1,5 +1,4 @@
 __author__ = 'QSG'
-import copy
 import time
 class queen:
     def __init__(self,row,column,size):
@@ -7,8 +6,9 @@ class queen:
         self.row=row
         self.column=column
         self.domain=range(size)
+        self.conflict_pos=[]
 
-def solve (size=8):
+def solve (size=9):
     free_queens=[queen(None,i,size) for i in range(size)]
     set_queens=[]
 
@@ -16,21 +16,29 @@ def solve (size=8):
 
     while len(free_queens)>0:     #if unlabelled is {},then return labelled
         print '==loop start:',i
-        selectedQueens=select_queen(free_queens,set_queens)    #pick first queen from unlabelled
-        print '--current queen:', (selectedQueens.row,selectedQueens.column)
-        print 'select a queen:', (selectedQueens.row,selectedQueens.column)
+        selectedQueen=select_queen(free_queens,set_queens)    #pick first queen from unlabelled
+        print '--current queen:', (selectedQueen.row,selectedQueen.column)
+
 
         #select a row from the queen's domain,if the queen's domain is empty,return false, or return true, and assign the
         #first element to selected queen's row.
-        success_set_selected_queen_row=select_row(selectedQueens)
+        success_set_selected_queen_row=select_row(selectedQueen)
+        print 'select a queen:', (selectedQueen.row,selectedQueen.column)
+
         if not success_set_selected_queen_row:
             print '-->start back track',len(free_queens),len(set_queens) #****add jumping method here, need to know how much to jump back
-            backSteps=get_back_steps(selectedQueens,set_queens)
-            # reset_queen(free_queens,set_queens,2)
-            reset_queen(free_queens,set_queens,backSteps)
+            reset_queen(free_queens,set_queens,2)
             print '-->after back track',len(free_queens),len(set_queens)
             print 'domain of queen is empty'
-        
+
+        #If current board is dead end, back track.
+        print 'seletcted queens',[(q.row,q.column) for q in set_queens ]
+        if len(set_queens)>0:
+            is_dead_end=dead_end(set_queens)
+            if is_dead_end:
+                reset_queen(free_queens,set_queens,1)
+                continue
+
         #check whether the current queens is safe
         isSafe=safe_board(set_queens)
         if not isSafe:
@@ -43,35 +51,30 @@ def solve (size=8):
 
     return set_queens
 
-def get_back_steps(selectedQueens,set_queens):
+def dead_end(set_queens):
 
-    column=selectedQueens.column
-    size=selectedQueens.size
-    conflictQueens=[queen(i,column,size) for i in range(size)]
-    conflictSets=[]
-    copy_set_queens=copy.deepcopy(set_queens)[:-1]
-    for conflictQueen in conflictQueens:
-        conflictSet=[]
-        for set_queen in copy_set_queens:
-            # if set_queen.row==None:
-            #     set_queen.row=set_queen.domain[0]
-            # print 'conflict queen',(conflictQueen.row,conflictQueen.column)
-            # print 'set queen', (set_queen.row,set_queen.column)
-            if not safe_queens(conflictQueen,set_queen):
-                conflictSet.append(set_queen.column)
-        conflictSets.append(conflictSet)
-    # print "===="
-    # print 'column: ',column
-    # print 'set queens', [(x.row,x.column) for x in copy_set_queens]
-    # print 'conflict sets: ',conflictSets
-    # print '===='
-    if [] in conflictSets:
-        back_steps=2
-    else:
-        back_steps=column-max([min(x) for x in conflictSets ])+1
-    return back_steps
+    all_conflict_pos=[]
+    for q in set_queens:
+        # print (q.row,q.column),' : ',q.conflict_pos
+        all_conflict_pos += q.conflict_pos
 
-
+    #Eliminate the repeated items in all_conflict_pos
+    all_conflict_pos=list(set(all_conflict_pos))
+    # print 'set queens in dead end',set_queens
+    size=set_queens[len(set_queens)-1].size
+    cur_col=set_queens[-1].column
+    for col in range(cur_col+1,size):
+        conflict_num=0
+        for pos in all_conflict_pos:
+            if col==pos[1]:
+                conflict_num+=1
+        if conflict_num==size:
+            # print '===dead end==='
+            # for q in set_queens:
+            #     print (q.row,q.column),' : ',q.conflict_pos
+            # print "found dead end, at column:",col,'size:',size,'cur col:',cur_col,'conflict is:', all_conflict_pos
+            return True
+    return False
 
 def select_queen(free_queens,set_queens):
     set_queens.append(free_queens.pop(0)) #Take a free queen from the free queen list, and append it to the list of queens being set.
@@ -89,6 +92,13 @@ def select_row(queen):
 
     #If queen's domain is not empty, then take the first number and assign it to a queen as its row number.
     queen.row=queen.domain.pop(0)
+
+    #set the queen's conflict postions
+    r=queen.row
+    c=queen.column
+    conf_row=[(r,col)for col in range(c+1,queen.size) ]
+    conf_slash=[(row,col)for row in range(queen.size) for col in range(c+1,queen.size) if (row+col)==(r+c) or (col-row)==(c-r) ]
+    queen.conflict_pos=conf_row+conf_slash
     return True
 
 #Take one or two queens from set_queens list and insert them into the free_queens list.
@@ -103,11 +113,9 @@ def reset_queen(free_queens,set_queens,number_of_queens):
 
 #Estimate whether two queens are conflict
 def safe_queens(queen1,queen2):
-    not_same_row=queen1.row != queen2.row
-    not_same_slash=queen1.row+queen1.column != queen2.row+queen2.column
-    not_sam_back_slash=queen1.row+queen2.column != queen2.row+queen1.column
-
-    return( not_same_row and not_same_slash and not_sam_back_slash)
+    return(queen1.row != queen2.row and
+            queen1.row+queen1.column != queen2.row+queen2.column and
+            queen1.row+queen2.column != queen2.row+queen1.column)
 
 
 def safe_board(queens):
